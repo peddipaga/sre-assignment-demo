@@ -1,0 +1,78 @@
+name: CI - Build & Push Image, Bump Helm Tag
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "app/**"
+      - "helm/hello-flask/**"
+      - ".github/workflows/ci.yaml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build-push-bump:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compute image tag (short SHA)
+        id: vars
+        run: echo "tag=$(echo $GITHUB_SHA | cut -c1-7)" >> "$GITHUB_OUTPUT"
+
+      - name: Auth to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: "${{ secrets.GCP_SA_KEY }}"
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+
+      - name: Build image
+        run: |
+          IMAGE_URI="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/sre-takehome-demo/hello-flask:${{ steps.vars.outputs.tag }}"
+          docker build -t "$IMAGE_URI" ./app
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+
+      - name: Push image
+        run: |
+          docker push "$IMAGE_URI"
+
+      - name: Update Helm values.yaml with new tag
+        run: |
+          python - <<'PY'
+          import yaml
+
+          values_path = "helm/hello-flask/values.yaml"
+          with open(values_path) as f:
+            data = yaml.safe_load(f) or {}
+
+          data.setdefault("image", {})
+          data["image"]["tag"] = "${{ steps.vars.outputs.tag }}"
+
+          with open(values_path, "w") as f:
+            yaml.safe_dump(data, f, sort_keys=False)
+          PY
+
+      - name: Commit and push values.yaml
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add helm/hello-flask/values.yaml
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "ci: bump hello-flask image tag to ${{ steps.vars.outputs.tag }}"
+          git push
