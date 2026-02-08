@@ -2,7 +2,7 @@ image:
   repository: us-central1-docker.pkg.dev/sre-assignment-gke-hpa/sre-takehome-demo/hello-flask
   tag: "v1"
 
-replicaCount: 2
+replicaCount: 3
 
 resources:
   requests:
