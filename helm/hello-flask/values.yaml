@@ -1,9 +1,7 @@
 image:
   repository: us-central1-docker.pkg.dev/sre-assignment-gke-hpa/sre-takehome-demo/hello-flask
-  tag: "v1"
-
+  tag: 40ec623
 replicaCount: 2
-
 resources:
   requests:
     cpu: 100m
@@ -11,16 +9,13 @@ resources:
   limits:
     cpu: 500m
     memory: 256Mi
-
 service:
   type: LoadBalancer
   port: 80
   targetPort: 8080
-
 hpa:
   enabled: true
   minReplicas: 2
   maxReplicas: 5
   targetCPUUtilizationPercentage: 50
-  # Scale-down threshold is not directly "CPU < 20%" in HPA v2; we implement it via behavior + stabilization.
   scaleDownStabilizationSeconds: 60
