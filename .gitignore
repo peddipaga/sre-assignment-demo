@@ -1,4 +1,25 @@
-infra/*.tfstate*
-infra/.terraform.lock*
-infra/.terraform/*
-infra/tes*
+# Terraform
+./infra/.terraform/
+./infra/*.tfstate
+./infra/*.tfstate.*
+./infra/terraform.tfstate.d/
+./infra/.terraform.lock.hcl
+
+# Local var files (optional: keep gke_demo.tfvars if you want committed)
+./infra/*.auto.tfvars
+./infra/*.auto.tfvars.json
+
+# Keys / certs
+./infra/*.key
+./infra/*.crt
+./infra/*.pem
+
+.DS_Store
+.vscode/**
+
+infra/.terraform.lock.hcl
+infra/.terraform/
+infra/terraform.tfstate
+infra/terraform.tfstate.backup
+infra/terraform.tfstate.d
+.gitignore

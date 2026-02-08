@@ -10,10 +10,16 @@ terraform {
       source  = "hashicorp/google-beta"
       version = ">= 6.11.0, < 7.0.0"
     }
-    # helm = {
-    #   source  = "hashicorp/helm"
-    #   version = ">= 2.9.0"
-    # }
+
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.25"
+    }
+
+    helm = {
+      source  = "hashicorp/helm"
+      version = ">= 2.9.0"
+    }
   }
 }
 

@@ -1,56 +1,62 @@
-# resource "google_container_cluster" "gke" {
-#   name     = var.cluster_name
-#   location = var.zone
-
-#   network    = google_compute_network.vpc.name
-#   subnetwork = google_compute_subnetwork.subnet.name
-
-#   remove_default_node_pool = true
-#   initial_node_count       = 1
-
-#   ip_allocation_policy {
-#     cluster_secondary_range_name  = var.pods_range
-#     services_secondary_range_name = var.svc_range
-#   }
-
-#   # Keep it simple for demo; you can add Workload Identity etc. as "bonus".
-#   logging_service    = "logging.googleapis.com/kubernetes"
-#   monitoring_service = "monitoring.googleapis.com/kubernetes"
-#   deletion_protection = false
-# }
-
-# resource "google_container_node_pool" "primary" {
-#   name       = "${var.cluster_name}-np"
-#   location   = var.zone
-#   cluster    = google_container_cluster.gke.name
-#   node_count = var.node_min
-
-#   autoscaling {
-#     min_node_count = var.node_min
-#     max_node_count = var.node_max
-#   }
-
-#   node_config {
-#     machine_type = var.node_machine_type
-#     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
-
-#     labels = {
-#       env = "demo"
-#     }
-#   }
-# }
+resource "google_service_account" "gke_nodes" {
+  account_id   = "gke-nodes-sa"
+  display_name = "GKE Node Pool Service Account"
+}
 
 
-# # resource "google_project_service" "cloudresourcemanager" {
-# #   service            = "cloudresourcemanager.googleapis.com"
-# #   disable_on_destroy = false
-# #   project            = var.project_id
-# # }
+module "gke" {
+  source  = "terraform-google-modules/kubernetes-engine/google"
+  version = "~> 35.0"
 
-# resource "google_project_service" "enable_apis" {
-#   for_each           = toset(var.enabled_apis)
-#   service            = each.key
-#   disable_on_destroy = false
-#   project            = var.project_id
+  project_id = var.project_id
+  name       = var.cluster_name
 
-# }
+  regional = false
+  zones    = [var.zone]
+
+  network    = google_compute_network.vpc.name
+  subnetwork = google_compute_subnetwork.subnet.name
+
+  ip_range_pods     = var.pods_range
+  ip_range_services = var.svc_range
+
+  remove_default_node_pool  = true
+  deletion_protection       = false
+  default_max_pods_per_node = 32
+
+  create_service_account = false
+  service_account        = google_service_account.gke_nodes.email
+
+  # Below would grand access to GCR (which is legacy) and Artifact Registry
+  # grant_registry_access = true
+
+  logging_service    = "logging.googleapis.com/kubernetes"
+  monitoring_service = "monitoring.googleapis.com/kubernetes"
+
+  # IMPORTANT: keep node_pools values scalar (no lists/maps here)
+  node_pools = [
+    {
+      name         = "${var.cluster_name}-np"
+      machine_type = var.node_machine_type
+
+      min_count     = var.node_min
+      max_count     = var.node_max
+      initial_count = var.node_min
+    }
+  ]
+
+  # Put oauth scopes here (module expects this separately)
+  node_pools_oauth_scopes = {
+    all = ["https://www.googleapis.com/auth/cloud-platform"]
+  }
+
+  # Put labels here (module expects this separately)
+  node_pools_labels = {
+    all = {}
+    "${var.cluster_name}-np" = {
+      env = "demo"
+    }
+  }
+
+  depends_on = [google_project_service.enable_apis]
+}
