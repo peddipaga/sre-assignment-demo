@@ -7,7 +7,7 @@ spec:
   project: default
 
   source:
-    repoURL: https://github.com/YOUR_USERNAME/sre-gitops-demo.git
+    repoURL: https://github.com/peddipaga/sre-gitops-demo.git
     targetRevision: main
     path: helm/hello-flask
     helm:
