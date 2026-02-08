@@ -19,14 +19,14 @@ output "project_id" {
   value = var.project_id
 }
 
-output "argocd_tls_crt" {
-  value     = tls_self_signed_cert.argocd.cert_pem
-  sensitive = true
-}
+# output "argocd_tls_crt" {
+#   value     = tls_self_signed_cert.argocd.cert_pem
+#   sensitive = true
+# }
 
-output "argocd_tls_key" {
-  value     = tls_private_key.argocd.private_key_pem
-  sensitive = true
-}
+# output "argocd_tls_key" {
+#   value     = tls_private_key.argocd.private_key_pem
+#   sensitive = true
+# }
 
 
