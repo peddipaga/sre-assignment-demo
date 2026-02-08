@@ -1,0 +1,4 @@
+infra/*.tfstate*
+infra/.terraform.lock*
+infra/.terraform/*
+infra/tes*
